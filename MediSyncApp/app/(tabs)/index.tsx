@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 
 import Button from '@/components/Button';
 import * as DocumentPicker from 'expo-document-picker';
@@ -79,31 +79,42 @@ export default function Index() {
       bookType: 'xlsx',
     });
 
-    // Verificar se está rodando na web
-    if (typeof window !== 'undefined') {
-      // Criar um link de download dinâmico
+    if (Platform.OS === 'web') {
+      // Lógica para web
       const blob = new Blob([Uint8Array.from(atob(wbout), c => c.charCodeAt(0))], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const url = URL.createObjectURL(blob);
-
-      // Criar um link para download
       const link = document.createElement('a');
       link.href = url;
       link.download = 'new_excel.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      console.log('Arquivo Excel gerado e pronto para download.');
+      URL.revokeObjectURL(url); // Clean up the URL object
+      console.log('Arquivo Excel gerado e baixado no navegador.');
     } else {
-      // Caso esteja em um dispositivo móvel, usar expo-file-system
-      const path = FileSystem.cacheDirectory + 'new_excel.xlsx';
-      await FileSystem.writeAsStringAsync(path, wbout, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      console.log('Novo ficheiro criado em:', path);
+      // Lógica para mobile (iOS e Android)
+      const filename = 'new_excel.xlsx';
+      const path = `${FileSystem.cacheDirectory}${filename}`;
+      try {
+        await FileSystem.writeAsStringAsync(path, wbout, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log('Novo ficheiro criado em:', path);
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(path, {
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            dialogTitle: 'Compartilhar arquivo Excel',
+          });
+          console.log('Arquivo Excel compartilhado com sucesso.');
+        } else {
+          alert('Compartilhamento não disponível neste dispositivo.');
+        }
+      } catch (error) {
+        console.error('Erro ao criar ou compartilhar o arquivo Excel:', error);
+        alert('Ocorreu um erro ao criar ou compartilhar o arquivo Excel.');
+      }
     }
   };
 
@@ -114,13 +125,13 @@ export default function Index() {
         return;
       }
 
-      // Chamar a função para criar e baixar o Excel
+      // Chamar a função para criar e baixar/compartilhar o Excel
       await createExcelWithValueA1(valueA1);
 
-      console.log('Download do Excel concluído.');
+      console.log('Processo de download/compartilhamento do Excel concluído.');
     } catch (error) {
-      console.error('Erro ao fazer o download do Excel:', error);
-      alert('Ocorreu um erro ao tentar fazer o download do Excel.');
+      console.error('Erro ao processar o download/compartilhamento do Excel:', error);
+      alert('Ocorreu um erro ao tentar processar o download/compartilhamento do Excel.');
     }
   };
 
