@@ -9,6 +9,8 @@ import * as XLSX from 'xlsx';
 import React from 'react';
 
 export default function Index() {
+  const [firstColumnValues, setFirstColumnValues] = useState<string[]>([]);
+
   const [valueA1, setValueA1] = useState<string | null>(null); // Armazena o valor da célula A1
 
   const pickExcelAsync = async () => {
@@ -25,27 +27,51 @@ export default function Index() {
     if (!result.canceled && result.assets?.[0]?.uri) {
       try {
         const fileUri = result.assets[0].uri;
-
-        // Ler o arquivo usando fetch (compatível com web)
         const response = await fetch(fileUri);
         const blob = await response.blob();
 
-        // Converter o blob para base64 usando FileReader
         const reader = new FileReader();
         reader.onloadend = async () => {
           const fileContent = reader.result?.toString().replace(/^data:.*;base64,/, '') || '';
-
-          // Processar o conteúdo com XLSX
           const workbook = XLSX.read(fileContent, { type: 'base64' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          // Ler o valor da célula A1
           const value = firstSheet['A1']?.v ?? '';
 
           console.log('Valor da célula A1:', value);
 
           // Armazenar o valor da célula A1 no estado
           setValueA1(value);
-        };
 
+          const values: string[] = [];
+          let row = 1;
+          let hasDuplicates = false;
+          const seenValues = new Set<string>();
+
+          while (firstSheet[`A${row}`]) {
+            const cellValue = firstSheet[`A${row}`].v?.toString() || '';
+            if (seenValues.has(cellValue)) {
+              alert(`Valor duplicado encontrado na célula A${row}: ${cellValue}`);
+              hasDuplicates = true;
+              break; // Interrompe a leitura ao encontrar a primeira duplicata
+            }
+            seenValues.add(cellValue);
+            values.push(cellValue);
+            console.log(`Valor na célula A${row}:`, cellValue);
+            row++;
+          }
+
+          if (hasDuplicates) {
+            alert('O arquivo contém valores duplicados na primeira coluna. A operação foi interrompida.');
+            setFirstColumnValues([]); // Não atualiza o estado se houver duplicatas
+          } else if (values.length > 0) {
+            console.log('Valores lidos da primeira coluna (sem duplicatas):', values);
+            setFirstColumnValues(values);
+          } else {
+            alert('Nenhum valor encontrado na primeira coluna.');
+            setFirstColumnValues([]);
+          }
+        };
         reader.readAsDataURL(blob);
       } catch (error) {
         console.error('Erro ao processar o ficheiro:', error);
