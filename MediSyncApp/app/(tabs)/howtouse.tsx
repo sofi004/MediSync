@@ -1,9 +1,13 @@
 import React from 'react';
-import { Text, View, StyleSheet, ScrollView } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, Image} from 'react-native';
 
-export default function AboutScreen() {
+export default function HowToUseScreen() {
   return (
     <ScrollView style={styles.container}>
+      <Image
+        source={require('../../assets/images/excel-example.png')}
+        style={styles.image}
+      />
       <Text style={styles.heading}>Excel File Structure:</Text>
       <Text style={styles.paragraph}>To ensure the application functions correctly, the Excel file you upload must adhere to the following structure:</Text>
 
@@ -58,6 +62,7 @@ export default function AboutScreen() {
       <View style={styles.listItem}>
         <Text style={styles.bold}>New Week Template Indication:</Text>
         <Text style={styles.whiteText}> A new set of morning schedule rows appearing after an afternoon schedule section signifies the start of a new week template.</Text>
+        <Text></Text>
       </View>
     </ScrollView>
   );
@@ -100,5 +105,11 @@ const styles = StyleSheet.create({
   },
   nestedListItem: {
     marginLeft: 15,
+  },
+  image: {
+    width: 350, // Ajuste a largura conforme necessário
+    height: 250, // Ajuste a altura conforme necessário
+    resizeMode: 'contain', // Ou 'cover', 'stretch', 'repeat', 'center'
+    marginBottom: 20,
   },
 });
