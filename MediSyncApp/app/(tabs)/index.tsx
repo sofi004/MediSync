@@ -13,6 +13,8 @@ export default function Index() {
 
   const [valueA1, setValueA1] = useState<string | null>(null); // Armazena o valor da célula A1
 
+  const [extractedRows, setExtractedRows] = useState<string[][]>([]);
+
   const pickExcelAsync = async () => {
     let result = await DocumentPicker.getDocumentAsync({
       type: [
@@ -42,6 +44,20 @@ export default function Index() {
 
           // Armazenar o valor da célula A1 no estado
           setValueA1(value);
+
+          const rows: string[][] = [];
+          let rowNumber = 1;
+
+          while (firstSheet[`E${rowNumber}`]) {
+            const e = firstSheet[`E${rowNumber}`]?.v?.toString() || '';
+            const f = firstSheet[`F${rowNumber}`]?.v?.toString() || '';
+            const g = firstSheet[`G${rowNumber}`]?.v?.toString() || '';
+            const h = firstSheet[`H${rowNumber}`]?.v?.toString() || '';
+            rows.push([e, f, g, h]);
+            rowNumber++;
+          }
+
+          setExtractedRows(rows);
 
           const values: string[] = [];
           let row = 1;
@@ -94,19 +110,14 @@ export default function Index() {
     }
   };
 
-  const createExcelWithValueA1 = async (value: string) => {
+  const createExcelWithValues = async (rows: string[][]) => {
     const newWorkbook = XLSX.utils.book_new();
-    const newWorksheet = XLSX.utils.aoa_to_sheet([[value]]);
+    const newWorksheet = XLSX.utils.aoa_to_sheet(rows);
     XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Sheet1');
 
-    // Gerar o arquivo Excel em base64
-    const wbout = XLSX.write(newWorkbook, {
-      type: 'base64',
-      bookType: 'xlsx',
-    });
+    const wbout = XLSX.write(newWorkbook, { type: 'base64', bookType: 'xlsx' });
 
     if (Platform.OS === 'web') {
-      // Lógica para web
       const blob = new Blob([Uint8Array.from(atob(wbout), c => c.charCodeAt(0))], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
@@ -124,9 +135,7 @@ export default function Index() {
       const filename = 'new_excel.xlsx';
       const path = `${FileSystem.cacheDirectory}${filename}`;
       try {
-        await FileSystem.writeAsStringAsync(path, wbout, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        await FileSystem.writeAsStringAsync(path, wbout, { encoding: FileSystem.EncodingType.Base64 });
         console.log('Novo ficheiro criado em:', path);
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(path, {
@@ -146,13 +155,13 @@ export default function Index() {
 
   const handleDownload = async () => {
     try {
-      if (!valueA1) {
-        alert('Nenhum valor foi processado. Por favor, escolha um arquivo Excel primeiro.');
+      if (extractedRows.length === 0) {
+        alert('Nenhum valor válido foi lido para as colunas de E a H.');
         return;
       }
 
       // Chamar a função para criar e baixar/compartilhar o Excel
-      await createExcelWithValueA1(valueA1);
+      await createExcelWithValues(extractedRows);
 
       console.log('Processo de download/compartilhamento do Excel concluído.');
     } catch (error) {
