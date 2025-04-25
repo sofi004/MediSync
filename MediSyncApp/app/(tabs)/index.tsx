@@ -53,7 +53,25 @@ export default function Index() {
             const f = firstSheet[`F${rowNumber}`]?.v?.toString() || '';
             const g = firstSheet[`G${rowNumber}`]?.v?.toString() || '';
             const h = firstSheet[`H${rowNumber}`]?.v?.toString() || '';
-            rows.push([e, f, g, h]);
+            const i = firstSheet[`I${rowNumber}`]?.v?.toString() || '';
+            const j = firstSheet[`J${rowNumber}`]?.v?.toString() || '';
+            const k = firstSheet[`K${rowNumber}`]?.v?.toString() || '';
+            const l = firstSheet[`L${rowNumber}`]?.v?.toString() || '';
+            const m = firstSheet[`M${rowNumber}`]?.v?.toString() || '';
+            const n = firstSheet[`N${rowNumber}`]?.v?.toString() || '';
+            const o = firstSheet[`O${rowNumber}`]?.v?.toString() || '';
+            const p = firstSheet[`P${rowNumber}`]?.v?.toString() || '';
+            const q = firstSheet[`Q${rowNumber}`]?.v?.toString() || '';
+            const r = firstSheet[`R${rowNumber}`]?.v?.toString() || '';
+            const s = firstSheet[`S${rowNumber}`]?.v?.toString() || '';
+            const t = firstSheet[`T${rowNumber}`]?.v?.toString() || '';
+            const u = firstSheet[`U${rowNumber}`]?.v?.toString() || '';
+            const v = firstSheet[`V${rowNumber}`]?.v?.toString() || '';
+            const w = firstSheet[`W${rowNumber}`]?.v?.toString() || '';
+            const x = firstSheet[`X${rowNumber}`]?.v?.toString() || '';
+            const y = firstSheet[`Y${rowNumber}`]?.v?.toString() || '';
+            const z = firstSheet[`Z${rowNumber}`]?.v?.toString() || '';
+            rows.push([e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]);
             rowNumber++;
           }
 
