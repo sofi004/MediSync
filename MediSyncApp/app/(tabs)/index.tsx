@@ -10,9 +10,6 @@ import React from 'react';
 
 export default function Index() {
   const [firstColumnValues, setFirstColumnValues] = useState<string[]>([]);
-
-  const [valueA1, setValueA1] = useState<string | null>(null); // Armazena o valor da célula A1
-
   const [extractedRows, setExtractedRows] = useState<string[][]>([]);
 
   const pickExcelAsync = async () => {
@@ -37,13 +34,6 @@ export default function Index() {
           const fileContent = reader.result?.toString().replace(/^data:.*;base64,/, '') || '';
           const workbook = XLSX.read(fileContent, { type: 'base64' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          // Ler o valor da célula A1
-          const value = firstSheet['A1']?.v ?? '';
-
-          console.log('Valor da célula A1:', value);
-
-          // Armazenar o valor da célula A1 no estado
-          setValueA1(value);
 
           const rows: string[][] = [];
           let rowNumber = 1;
@@ -128,10 +118,80 @@ export default function Index() {
     }
   };
 
-  const createExcelWithValues = async (rows: string[][]) => {
+  const createExcelWithValues = async (templateRows: string[][]) => {
+    if (!templateRows || templateRows.length === 0) {
+      alert('Nenhum dado de semana encontrado para repetir.');
+      return;
+    }
+
     const newWorkbook = XLSX.utils.book_new();
-    const newWorksheet = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Sheet1');
+    const newWorksheetData: any[][] = [];
+
+    let currentDate = new Date('2024-10-01T00:00:00');
+    const endDate = new Date('2025-12-31T23:59:59');
+    const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const dayColumns = ['', 'B', '', 'E', '', 'H', '', 'K', '', 'N', '', 'Q', '', 'T', '', 'W', '', 'Z']; // Colunas onde os dias começam
+
+    while (currentDate <= endDate) {
+      const weekHeader = Array(26).fill(''); // Inicializa um array com o tamanho esperado de colunas
+      const firstDayOfWeek = new Date(currentDate);
+      // Encontra o primeiro dia da semana (Segunda-feira)
+      while (firstDayOfWeek.getDay() !== 1) {
+        firstDayOfWeek.setDate(firstDayOfWeek.getDate() - 1);
+      }
+
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(firstDayOfWeek);
+        day.setDate(firstDayOfWeek.getDate() + i);
+
+        if (day <= endDate) {
+          const dayName = daysOfWeek[day.getDay()];
+          const dateString = day.toLocaleDateString();
+          let columnIndex = -1;
+
+          if (dayName === 'Segunda') columnIndex = 1; // Column B
+          else if (dayName === 'Terça') columnIndex = 4; // Column E
+          else if (dayName === 'Quarta') columnIndex = 7; // Column H
+          else if (dayName === 'Quinta') columnIndex = 10; // Column K
+          else if (dayName === 'Sexta') columnIndex = 13; // Column N
+          else if (dayName === 'Sábado') columnIndex = 16; // Column Q
+          else if (dayName === 'Domingo') columnIndex = 19; // Column T
+
+          if (columnIndex !== -1 && day.getMonth() === firstDayOfWeek.getMonth()) {
+            weekHeader[columnIndex] = day.toLocaleDateString('pt-PT', { day: 'numeric', month: 'numeric', year: 'numeric' });
+          } else if (columnIndex !== -1) {
+            weekHeader[columnIndex] = day.toLocaleDateString('pt-PT', { day: 'numeric', month: 'numeric', year: 'numeric' });
+          }
+        }
+      }
+      newWorksheetData.push(weekHeader);
+
+      // Adicionar as linhas da semana do template
+      templateRows.forEach(row => {
+        newWorksheetData.push([...row]);
+      });
+
+      // Avança para a próxima semana
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+
+    const newWorksheet = XLSX.utils.aoa_to_sheet(newWorksheetData);
+
+    // Definir a largura das colunas (opcional, mas melhora a visualização)
+    // Definir a largura das colunas (opcional, mas melhora a visualização)
+    const wscols = [
+      { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 },
+    ];
+    newWorksheet['!cols'] = wscols;
+
+    XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Calendário');
 
     const wbout = XLSX.write(newWorkbook, { type: 'base64', bookType: 'xlsx' });
 
@@ -142,7 +202,7 @@ export default function Index() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'new_excel.xlsx';
+      link.download = 'calendario_2024_2025.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -150,8 +210,8 @@ export default function Index() {
       console.log('Arquivo Excel gerado e baixado no navegador.');
     } else {
       // Lógica para mobile (iOS e Android)
-      const filename = 'new_excel.xlsx';
-      const path = `${FileSystem.cacheDirectory}${filename}`;
+      const filename = 'calendario_2024_2025.xlsx';
+      const path = `<span class="math-inline">\{FileSystem\.cacheDirectory\}</span>{filename}`;
       try {
         await FileSystem.writeAsStringAsync(path, wbout, { encoding: FileSystem.EncodingType.Base64 });
         console.log('Novo ficheiro criado em:', path);
@@ -172,27 +232,30 @@ export default function Index() {
   };
 
   const handleDownload = async () => {
-    try {
-      if (extractedRows.length === 0) {
-        alert('Nenhum valor válido foi lido para as colunas de E a H.');
-        return;
-      }
-
-      // Chamar a função para criar e baixar/compartilhar o Excel
-      await createExcelWithValues(extractedRows);
-
-      console.log('Processo de download/compartilhamento do Excel concluído.');
-    } catch (error) {
-      console.error('Erro ao processar o download/compartilhamento do Excel:', error);
-      alert('Ocorreu um erro ao tentar processar o download/compartilhamento do Excel.');
+    if (extractedRows.length === 0) {
+      alert('Por favor, carregue um arquivo Excel primeiro para obter a estrutura das semanas.');
+      return;
     }
+
+    // Filtrar as linhas que contêm dados de morning/afternoon para o template da semana
+    const weekTemplate: string[][] = [];
+    for (let i = 0; i < extractedRows.length; i++) {
+      weekTemplate.push(extractedRows[i]);
+    }
+
+    if (weekTemplate.length === 0) {
+      alert('Não foram encontradas semanas válidas no arquivo carregado (precisa de linhas com "morning" e "afternoon").');
+      return;
+    }
+
+    await createExcelWithValues(weekTemplate);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.footerContainer}>
-        <Button theme="primary" label="Choose an Excel" onPress={pickExcelAsync} />
-        <Button theme="primary" label="Download Excel" onPress={handleDownload} />
+        <Button theme="primary" label="Escolher Excel" onPress={pickExcelAsync} />
+        <Button theme="primary" label="Baixar Excel" onPress={handleDownload} />
       </View>
     </View>
   );
