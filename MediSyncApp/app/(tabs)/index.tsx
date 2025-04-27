@@ -126,11 +126,11 @@ export default function Index() {
 
     const newWorkbook = XLSX.utils.book_new();
     const newWorksheetData: any[][] = [];
+    let templateLineNumber = 0;
 
     let currentDate = new Date('2024-10-01T00:00:00');
     const endDate = new Date('2025-12-31T23:59:59');
     const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    const dayColumns = ['', 'B', '', 'E', '', 'H', '', 'K', '', 'N', '', 'Q', '', 'T', '', 'W', '', 'Z']; // Colunas onde os dias começam
 
     while (currentDate <= endDate) {
       const weekHeader = Array(26).fill(''); // Inicializa um array com o tamanho esperado de colunas
@@ -165,11 +165,21 @@ export default function Index() {
         }
       }
       newWorksheetData.push(weekHeader);
-
-      // Adicionar as linhas da semana do template
-      templateRows.forEach(row => {
-        newWorksheetData.push([...row]);
-      });
+      
+      while(true){ 
+        newWorksheetData.push(templateRows[templateLineNumber]); 
+        if (templateLineNumber +1 === templateRows.length) {
+          templateLineNumber = 0;
+          break;
+        }
+        else{
+          if (templateRows[templateLineNumber][0] === 'afternoon' && templateRows[templateLineNumber +1][0] === 'morning') {
+            templateLineNumber++;
+            break;
+          }
+        }
+        templateLineNumber++;
+      }
 
       // Avança para a próxima semana
       currentDate.setDate(currentDate.getDate() + 7);
